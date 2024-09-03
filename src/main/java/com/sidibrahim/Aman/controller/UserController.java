@@ -34,6 +34,15 @@ public class UserController {
                 .build());
     }
 
+    @GetMapping("/test")
+    public ResponseEntity<ResponseMessage> test(){
+        return ResponseEntity.ok(ResponseMessage.builder()
+                        .data("HEllo World Test Endpoint")
+                        .message("Test Endpoint")
+                        .status(HttpStatus.OK.value())
+                .build());
+    }
+
     @PostMapping
     @PreAuthorize("!hasAuthority('AGENT')")
     public ResponseEntity<ResponseMessage> save(@RequestBody UserDto userDto) {
