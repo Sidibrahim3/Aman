@@ -64,4 +64,15 @@ public class UserController {
                         .status(HttpStatus.OK.value())
                 .build());
     }
+
+    @GetMapping("/{agencyId}/agency")
+    @PreAuthorize("!hasAuthority('AGENT')")
+    public ResponseEntity<ResponseMessage> getAllUsersByAgencyId(@PathVariable Long agencyId) {
+        return ResponseEntity.ok(ResponseMessage
+                .builder()
+                .message("Users List In Agency Retrieved Successfully")
+                .status(HttpStatus.OK.value())
+                .data(userService.getAllUsersByAgencyId(agencyId))
+                .build());
+    }
 }

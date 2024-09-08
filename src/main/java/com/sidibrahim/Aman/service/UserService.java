@@ -9,13 +9,16 @@ import com.sidibrahim.Aman.mapper.AgencyMapper;
 import com.sidibrahim.Aman.mapper.UserMapper;
 import com.sidibrahim.Aman.repository.UserRepository;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class UserService {
 
     private final UserRepository userRepository;
@@ -32,15 +35,23 @@ public class UserService {
         this.agencyMapper = agencyMapper;
     }
 
+    @Transactional
     public UserDto addUser(UserDto userDto) {
         Optional<User> user = userRepository.findUserByPhoneNumber(userDto.getPhoneNumber());
         if (user.isPresent()) {
             throw new GenericException("User Already Exists");
         }
         String userPassword = userDto.getPassword();
+        log.info("Adding new user");
         userDto.setPassword(passwordEncoder.encode(userPassword));
+        log.info("user password: {}", userPassword);
+        log.info("user password: {}", userDto.getPassword());
         User userEntity = userMapper.toUser(userDto);
-        return userMapper.toUserDto(userRepository.save(userEntity));
+        log.info("user entity: {}", userEntity);
+        userEntity.setEnabled(true);
+        User savedUser = userRepository.save(userEntity);
+        log.info("saved user: {}", savedUser);
+        return userMapper.toUserDto(savedUser);
     }
 
     public List<UserDto> getAllUsers() {
@@ -54,5 +65,10 @@ public class UserService {
         user.setAgency(agency);
         userRepository.save(user);
         return "User Added To agency Successfully";
+    }
+
+    public List<UserDto> getAllUsersByAgencyId(Long agencyId) {
+        List<User> users = userRepository.findByAgencyId(agencyId);
+        return users.stream().map(userMapper::toUserDto).collect(Collectors.toList());
     }
 }
