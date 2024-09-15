@@ -1,10 +1,12 @@
 package com.sidibrahim.Aman.controller;
 
+import com.sidibrahim.Aman.dto.PaginationData;
 import com.sidibrahim.Aman.dto.ResponseMessage;
 import com.sidibrahim.Aman.dto.UserDto;
 import com.sidibrahim.Aman.dto.request.UserToAgencyDto;
 import com.sidibrahim.Aman.service.UserService;
 import org.apache.coyote.Response;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,12 +27,16 @@ public class UserController {
 
     @GetMapping()
     @PreAuthorize("hasAuthority('SUPER_ADMIN')")
-    public ResponseEntity<ResponseMessage> getAllUsers() {
+    public ResponseEntity<ResponseMessage> getAllUsers(@RequestParam(defaultValue = "0") int page,
+                                                       @RequestParam(defaultValue = "5") int size) {
+        Page<UserDto> users = userService.getAllUsers(page, size);
+        PaginationData paginationData = new PaginationData(users);
         return ResponseEntity.ok(ResponseMessage
                 .builder()
                 .message("Users List Retrieved Successfully")
                 .status(HttpStatus.OK.value())
-                .data(userService.getAllUsers())
+                .data(users.getContent())
+                .meta(paginationData)
                 .build());
     }
 
@@ -40,6 +46,15 @@ public class UserController {
                         .data("HEllo World Test Endpoint")
                         .message("Test Endpoint")
                         .status(HttpStatus.OK.value())
+                .build());
+    }
+
+    @GetMapping("/{userId}")
+    public ResponseEntity<ResponseMessage> getUserById(@PathVariable Long userId) {
+        return ResponseEntity.ok(ResponseMessage.builder()
+                .data(userService.getUSerById(userId))
+                .message("Fetched User Successfully")
+                .status(HttpStatus.OK.value())
                 .build());
     }
 

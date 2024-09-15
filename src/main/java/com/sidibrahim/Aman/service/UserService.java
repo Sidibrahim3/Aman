@@ -10,10 +10,14 @@ import com.sidibrahim.Aman.mapper.UserMapper;
 import com.sidibrahim.Aman.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -54,8 +58,10 @@ public class UserService {
         return userMapper.toUserDto(savedUser);
     }
 
-    public List<UserDto> getAllUsers() {
-        return userMapper.toUserDtoList(userRepository.findAll());
+    public Page<UserDto> getAllUsers(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<User> userPage = userRepository.findAll(pageable);
+        return userPage.map(userMapper::toUserDto);
     }
 
     @Transactional
@@ -70,5 +76,9 @@ public class UserService {
     public List<UserDto> getAllUsersByAgencyId(Long agencyId) {
         List<User> users = userRepository.findByAgencyId(agencyId);
         return users.stream().map(userMapper::toUserDto).collect(Collectors.toList());
+    }
+
+    public UserDto getUSerById(Long id){
+        return userMapper.toUserDto(Objects.requireNonNull(userRepository.findById(id).orElse(null)));
     }
 }
