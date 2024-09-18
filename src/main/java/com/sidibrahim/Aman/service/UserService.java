@@ -81,4 +81,11 @@ public class UserService {
     public UserDto getUSerById(Long id){
         return userMapper.toUserDto(Objects.requireNonNull(userRepository.findById(id).orElse(null)));
     }
+
+    public UserDto getUserByPhoneNumber(String phoneNumber) {
+        return userMapper.toUserDto(userRepository
+                .findUserByPhoneNumber(phoneNumber)
+                .orElseThrow(
+                        () -> new GenericException("User Not Found with phoneNumber" + phoneNumber)));
+    }
 }

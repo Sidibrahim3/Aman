@@ -6,6 +6,8 @@ import com.sidibrahim.Aman.entity.User;
 import com.sidibrahim.Aman.exception.GenericException;
 import com.sidibrahim.Aman.mapper.TransactionMapper;
 import com.sidibrahim.Aman.repository.TransactionRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 
@@ -32,9 +34,8 @@ public class TransactionService {
                         .save(transaction));
     }
 
-    public List<TransactionDto> findAll() {
-        return
-                transactionMapper.toTransactionDtos(transactionRepository.findAll());
+    public Page<TransactionDto> findAll(int page, int size) {
+        return transactionMapper.toTransactionDtos(transactionRepository.findAll(PageRequest.of(page, size)));
     }
 
     public TransactionDto findById(Long id) {

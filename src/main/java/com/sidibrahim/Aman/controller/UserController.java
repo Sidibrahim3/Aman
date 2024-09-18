@@ -59,7 +59,7 @@ public class UserController {
     }
 
     @PostMapping
-    @PreAuthorize("!hasAuthority('AGENT')")
+    @PreAuthorize("hasAuthority('SUPER_ADMIN')")
     public ResponseEntity<ResponseMessage> save(@RequestBody UserDto userDto) {
         return ResponseEntity.ok(ResponseMessage
                 .builder()
@@ -88,6 +88,14 @@ public class UserController {
                 .message("Users List In Agency Retrieved Successfully")
                 .status(HttpStatus.OK.value())
                 .data(userService.getAllUsersByAgencyId(agencyId))
+                .build());
+    }
+    @GetMapping("/by-phoneNumber")
+    @PreAuthorize("hasAuthority('SUPER_ADMIN')")
+    public ResponseEntity<ResponseMessage> getUserByPhoneNumber(@RequestParam(name = "phoneNumber") String phoneNumber) {
+        return ResponseEntity.ok(ResponseMessage.builder()
+                .message("User Retrieved Successfully")
+                .data(userService.getUserByPhoneNumber(phoneNumber))
                 .build());
     }
 }

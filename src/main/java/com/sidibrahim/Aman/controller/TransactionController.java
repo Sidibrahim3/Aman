@@ -1,10 +1,12 @@
 package com.sidibrahim.Aman.controller;
 
+import com.sidibrahim.Aman.dto.PaginationData;
 import com.sidibrahim.Aman.dto.ResponseMessage;
 import com.sidibrahim.Aman.dto.TransactionDto;
 import com.sidibrahim.Aman.entity.Transaction;
 import com.sidibrahim.Aman.entity.User;
 import com.sidibrahim.Aman.service.TransactionService;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -32,12 +34,15 @@ public class TransactionController {
     }
 
     @GetMapping
-    public ResponseEntity<ResponseMessage> getAllTransactions() {
+    public ResponseEntity<ResponseMessage> getAllTransactions(@RequestParam(name = "page",defaultValue = "0")int page,
+                                                              @RequestParam(name = "size",defaultValue = "10")int size) {
+        Page<TransactionDto> dtoPage = transactionService.findAll(page,size);
         return ResponseEntity.ok(ResponseMessage
                 .builder()
                 .message("Successfully retrieved all transactions")
                 .status(HttpStatus.OK.value())
-                .data(transactionService.findAll())
+                .data(dtoPage.getContent())
+                .meta(new PaginationData(dtoPage))
                 .build());
     }
 

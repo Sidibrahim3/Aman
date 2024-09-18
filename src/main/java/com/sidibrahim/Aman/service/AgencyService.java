@@ -6,6 +6,8 @@ import com.sidibrahim.Aman.exception.GenericException;
 import com.sidibrahim.Aman.mapper.AgencyMapper;
 import com.sidibrahim.Aman.repository.AgencyRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,8 +23,8 @@ public class AgencyService {
         return agencyMapper.toAgencyDto(agencyRepository.save(agency));
     }
 
-    public List<AgencyDto> getAll(){
-        return agencyMapper.toAgencyDtos(agencyRepository.findAll());
+    public Page<AgencyDto> getAll(int page, int size){
+        return agencyMapper.toAgencyDtos(agencyRepository.findAll(PageRequest.of(page,size)));
     }
 
     public void deleteById(Long id){

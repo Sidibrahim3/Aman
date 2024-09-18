@@ -6,6 +6,7 @@ import com.sidibrahim.Aman.entity.Transaction;
 import com.sidibrahim.Aman.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -41,6 +42,11 @@ public class TransactionMapper {
     public List<TransactionDto> toTransactionDtos(List<Transaction> transactions) {
         return transactions.stream().map(this::toTransactionDto).collect(Collectors.toList());
     }
+
+    public Page<TransactionDto> toTransactionDtos(Page<Transaction> transactions) {
+        return transactions.map(this::toTransactionDto);
+    }
+
 
     public List<Transaction> toTransactions(List<TransactionDto> transactionsDtos){
         return transactionsDtos.stream().map(this::toTransaction).collect(Collectors.toList());

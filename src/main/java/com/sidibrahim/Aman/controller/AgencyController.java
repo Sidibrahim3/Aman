@@ -1,6 +1,7 @@
 package com.sidibrahim.Aman.controller;
 
 import com.sidibrahim.Aman.dto.AgencyDto;
+import com.sidibrahim.Aman.dto.PaginationData;
 import com.sidibrahim.Aman.dto.ResponseMessage;
 import com.sidibrahim.Aman.entity.Agency;
 import com.sidibrahim.Aman.exception.GenericException;
@@ -8,6 +9,7 @@ import com.sidibrahim.Aman.mapper.AgencyMapper;
 import com.sidibrahim.Aman.repository.AgencyRepository;
 import com.sidibrahim.Aman.service.AgencyService;
 import org.apache.coyote.Response;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,12 +35,15 @@ public class AgencyController {
 
     @GetMapping
     @PreAuthorize("hasAnyAuthority('SUPER_ADMIN')")
-    public ResponseEntity<ResponseMessage> getAll() {
+    public ResponseEntity<ResponseMessage> getAll(@RequestParam(name = "page",defaultValue = "0") int page,
+                                                  @RequestParam(name = "size",defaultValue = "10") int size) {
+        Page<AgencyDto> agencyDtoPage =agencyService.getAll(page,size);
         return ResponseEntity.ok(ResponseMessage
                 .builder()
                 .status(HttpStatus.OK.value())
                 .message("Agencies Retrieved successfully")
-                .data(agencyService.getAll())
+                .data(agencyDtoPage.getContent())
+                        .meta(new PaginationData(agencyDtoPage))
                 .build());
     }
 

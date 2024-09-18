@@ -4,6 +4,7 @@ import com.sidibrahim.Aman.dto.AgencyDto;
 import com.sidibrahim.Aman.entity.Agency;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 
@@ -32,6 +33,10 @@ public class AgencyMapper {
 
     public List<AgencyDto> toAgencyDtos(List<Agency> agencyList) {
         return agencyList.stream().map(this::toAgencyDto).toList();
+    }
+
+    public Page<AgencyDto> toAgencyDtos(Page<Agency> agencyList) {
+        return agencyList.map(this::toAgencyDto);
     }
 
     public List<Agency> toAgencyList(List<AgencyDto> agencyDtoList) {
