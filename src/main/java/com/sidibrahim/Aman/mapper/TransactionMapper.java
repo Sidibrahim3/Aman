@@ -1,9 +1,7 @@
 package com.sidibrahim.Aman.mapper;
 
 import com.sidibrahim.Aman.dto.TransactionDto;
-import com.sidibrahim.Aman.dto.UserDto;
 import com.sidibrahim.Aman.entity.Transaction;
-import com.sidibrahim.Aman.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.Page;
@@ -21,6 +19,8 @@ public class TransactionMapper {
                 .note(transactionDto.getNote())
                 .customerOtp(transactionDto.getCustomerOtp())
                 .type(transactionDto.getType())
+                .earn(transactionDto.getEarn())
+                .reference(transactionDto.getReference())
                 .build();
     }
 
@@ -36,6 +36,8 @@ public class TransactionMapper {
                 .customerPhoneNumber(transaction.getCustomerPhoneNumber())
                 .customerName(transaction.getCustomerName())
                 .agencyId(transaction.getAgency()!=null?transaction.getAgency().getId():null)
+                .earn(transaction.getEarn())
+                .reference(transaction.getReference())
                 .build();
     }
 

@@ -24,6 +24,8 @@ public class Transaction {
     private String customerName;
     private String customerPhoneNumber;
     private TransactionType type;
+    private Double earn;
+    private Long reference;
     private BigDecimal amount;
     private LocalDateTime createDate;
     private LocalDateTime updateDate;

@@ -22,4 +22,6 @@ public class TransactionDto {
     private LocalDateTime createDate;
     private LocalDateTime updateDate;
     private Long agencyId;
+    private Long reference;
+    private Double earn;
 }
