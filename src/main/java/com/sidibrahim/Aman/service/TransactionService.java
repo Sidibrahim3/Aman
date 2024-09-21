@@ -9,6 +9,8 @@ import com.sidibrahim.Aman.enums.TransactionType;
 import com.sidibrahim.Aman.exception.GenericException;
 import com.sidibrahim.Aman.mapper.TransactionMapper;
 import com.sidibrahim.Aman.repository.TransactionRepository;
+import com.sidibrahim.Aman.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -41,10 +43,12 @@ public class TransactionService {
 
     private final TransactionRepository transactionRepository;
     private final TransactionMapper transactionMapper;
+    private final UserRepository userRepository;
 
-    public TransactionService(TransactionRepository transactionRepository, TransactionMapper transactionMapper) {
+    public TransactionService(TransactionRepository transactionRepository, TransactionMapper transactionMapper, UserRepository userRepository) {
         this.transactionRepository = transactionRepository;
         this.transactionMapper = transactionMapper;
+        this.userRepository = userRepository;
     }
 
     public TransactionDto save(Transaction transaction, @AuthenticationPrincipal User user) {
@@ -55,9 +59,18 @@ public class TransactionService {
                 .toTransactionDto(transactionRepository
                         .save(transaction));
     }
-
     public Page<TransactionDto> findAll(int page, int size) {
-        return transactionMapper.toTransactionDtos(transactionRepository.findAll(PageRequest.of(page, size)));
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        User user = userRepository.findUserByPhoneNumber(auth.getName()).get();
+        Long agencyId = user.getAgency().getId();
+        return transactionMapper.toTransactionDtos(transactionRepository.findAllActiveTransactionsByAgencyId(agencyId,PageRequest.of(page, size)));
+    }
+    public Page<TransactionDto> findAllDeletedTransactions(int page, int size) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        User user = userRepository.findUserByPhoneNumber(auth.getName()).get();
+        Long agencyId = user.getAgency().getId();
+        return transactionMapper.toTransactionDtos(transactionRepository.findAllDeletedTransactionsByAgencyId(agencyId,PageRequest.of(page, size)));
     }
 
     public TransactionDto findById(Long id) {
@@ -67,9 +80,11 @@ public class TransactionService {
                         .orElseThrow(() -> new GenericException("Transaction Not Found")));
     }
 
+    @Transactional
     public void delete(Long id) {
         Transaction transaction = transactionRepository.findById(id).orElseThrow(() -> new GenericException("Transaction Not Found"));
-        transactionRepository.deleteById(transaction.getId());
+        transaction.setIsDeleted(true);
+        transactionRepository.save(transaction);
     }
 
     public List<TransactionDto> findByAgentId(Long id) {

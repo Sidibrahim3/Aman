@@ -53,6 +53,19 @@ public class TransactionController {
                 .build());
     }
 
+    @GetMapping("/deleted")
+    public ResponseEntity<ResponseMessage> getAllDeletedTransactions(@RequestParam(name = "page", defaultValue = "0") int page,
+                                                              @RequestParam(name = "size", defaultValue = "10") int size) {
+        Page<TransactionDto> dtoPage = transactionService.findAllDeletedTransactions(page, size);
+        return ResponseEntity.ok(ResponseMessage
+                .builder()
+                .message("Successfully retrieved all transactions")
+                .status(HttpStatus.OK.value())
+                .data(dtoPage.getContent())
+                .meta(new PaginationData(dtoPage))
+                .build());
+    }
+
     // Get Transaction by ID
     @GetMapping("/{id}")
     public ResponseEntity<ResponseMessage> getTransactionById(@PathVariable Long id) {

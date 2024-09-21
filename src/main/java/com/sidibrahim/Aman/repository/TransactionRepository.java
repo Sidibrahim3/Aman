@@ -2,6 +2,8 @@ package com.sidibrahim.Aman.repository;
 
 import com.sidibrahim.Aman.entity.Transaction;
 import com.sidibrahim.Aman.enums.TransactionType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -69,5 +71,24 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
                                                                @Param("endDate") LocalDateTime endDate,
                                                                @Param("userId") Long userId);
 
+    /**
+     * Retrieves a paginated list of active (non-deleted) transactions for a specific agency.
+     *
+     * @param agencyId The ID of the agency.
+     * @param pageable Pagination information.
+     * @return A page of non-deleted transactions for the specified agency.
+     */
+    @Query("SELECT t FROM Transaction t WHERE t.agency.id = :agencyId AND (t.isDeleted = false OR t.isDeleted IS NULL)")
+    Page<Transaction> findAllActiveTransactionsByAgencyId(@Param("agencyId") Long agencyId, Pageable pageable);
+
+    /**
+     * Retrieves a paginated list of deleted transactions for a specific agency.
+     *
+     * @param agencyId The ID of the agency.
+     * @param pageable Pagination information.
+     * @return A page of deleted transactions for the specified agency.
+     */
+    @Query("SELECT t FROM Transaction t WHERE t.agency.id = :agencyId AND t.isDeleted = true")
+    Page<Transaction> findAllDeletedTransactionsByAgencyId(@Param("agencyId") Long agencyId, Pageable pageable);
 
 }
