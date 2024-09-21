@@ -226,7 +226,7 @@ public class TransactionService {
 
             // Add Table Header
             contentStream.setFont(PDType1Font.HELVETICA_BOLD, 10);
-            drawTableRow(contentStream, yPosition, columnWidths, new String[]{"Amount", "Reference", "Phone Number", "Type", "Earn"}, true);
+            drawTableRow(contentStream, yPosition, columnWidths, new String[]{"Earn", "Reference", "Phone Number", "Type", "Amount"}, true);
 
             // Draw a line below the header
             yPosition -= 20;
@@ -236,11 +236,11 @@ public class TransactionService {
             // Add Transaction Rows
             for (ExportTransactionDto transaction : transactions) {
                 String[] rowData = new String[]{
-                        transaction.getAmount().toPlainString(),
+                        transaction.getEarn() != null ? transaction.getEarn().toString() : "N/A",
                         transaction.getReference() != null ? transaction.getReference().toString() : "N/A",
                         transaction.getCustomerPhoneNumber() != null ? transaction.getCustomerPhoneNumber() : "N/A",
                         transaction.getType() != null ? transaction.getType().toString() : "N/A",
-                        transaction.getEarn() != null ? transaction.getEarn().toString() : "N/A"
+                        transaction.getAmount().toPlainString()
                 };
 
                 drawTableRow(contentStream, yPosition, columnWidths, rowData, false);
@@ -258,7 +258,7 @@ public class TransactionService {
 
             // Add Total Earnings under the Earn column
             yPosition -= 20;
-            drawTableRow(contentStream, yPosition, columnWidths, new String[]{"", "", "", "Total", totalEarnings.toPlainString()}, false);
+            drawTableRow(contentStream, yPosition, columnWidths, new String[]{"Total Earning ", totalEarnings.toPlainString()}, false);
 
             // Number of transactions and report generation date at the bottom of the page
             contentStream.setFont(PDType1Font.HELVETICA, 8); // Small font size for additional details
