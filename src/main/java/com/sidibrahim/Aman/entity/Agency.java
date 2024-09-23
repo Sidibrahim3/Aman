@@ -37,6 +37,8 @@ public class Agency {
     @OneToMany(mappedBy = "agency")
     private List<Transaction> transactions;
 
+    private String email;
+
     @CreationTimestamp
     private LocalDate createDate;
 

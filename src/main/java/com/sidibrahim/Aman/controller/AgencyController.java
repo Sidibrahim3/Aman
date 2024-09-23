@@ -4,10 +4,14 @@ import com.sidibrahim.Aman.dto.AgencyDto;
 import com.sidibrahim.Aman.dto.PaginationData;
 import com.sidibrahim.Aman.dto.ResponseMessage;
 import com.sidibrahim.Aman.entity.Agency;
+import com.sidibrahim.Aman.entity.User;
 import com.sidibrahim.Aman.exception.GenericException;
 import com.sidibrahim.Aman.mapper.AgencyMapper;
 import com.sidibrahim.Aman.repository.AgencyRepository;
+import com.sidibrahim.Aman.repository.UserRepository;
 import com.sidibrahim.Aman.service.AgencyService;
+import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.coyote.Response;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpEntity;
@@ -15,6 +19,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,15 +28,18 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/agencies")
+@Slf4j
 public class AgencyController {
     private final AgencyRepository agencyRepository;
     private final AgencyService agencyService;
     private final AgencyMapper agencyMapper;
+    private final UserRepository userRepository;
 
-    public AgencyController(AgencyRepository agencyRepository, AgencyService agencyService, AgencyMapper agencyMapper) {
+    public AgencyController(AgencyRepository agencyRepository, AgencyService agencyService, AgencyMapper agencyMapper, UserRepository userRepository) {
         this.agencyRepository = agencyRepository;
         this.agencyService = agencyService;
         this.agencyMapper = agencyMapper;
+        this.userRepository = userRepository;
     }
 
     @GetMapping
@@ -109,5 +118,20 @@ public class AgencyController {
                         .message("Agency Updated Successfully ")
                         .data(agencyMapper.toAgencyDto(savedAgency))
                 .build());
+    }
+
+    @PostMapping("/change-email")
+    public ResponseEntity<String> changeEmailOfReports(@RequestParam(name = "email") String email){
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            User user = userRepository.findUserByPhoneNumber(authentication.getName()).get();
+            Agency agency = user.getAgency();
+            agency.setEmail(email);
+            agencyRepository.save(agency);
+            return ResponseEntity.ok(agency.getName()+" Email updated successfully");
+        }catch (Exception e){
+            log.info("Error occurred while trying to update agency email");
+            throw new GenericException("Error Occurred While trying to update agency with "+e.getMessage());
+        }
     }
 }

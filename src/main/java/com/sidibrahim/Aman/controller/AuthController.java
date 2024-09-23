@@ -1,5 +1,6 @@
 package com.sidibrahim.Aman.controller;
 
+import com.sidibrahim.Aman.dto.ChangePasswordDTO;
 import com.sidibrahim.Aman.dto.request.AuthRequestDto;
 import com.sidibrahim.Aman.dto.response.AuthResponseDto;
 import com.sidibrahim.Aman.entity.User;
@@ -40,13 +41,13 @@ public class AuthController {
     }
 
     @PostMapping("/change-password")
-    public ResponseEntity<String> changePassword(@RequestParam String oldPassword, @RequestParam String newPassword) {
+    public ResponseEntity<String> changePassword(@RequestBody ChangePasswordDTO changePasswordDTO) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = userRepository.findUserByPhoneNumber(authentication.getName()).get();
-        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+        if (!passwordEncoder.matches(changePasswordDTO.getOldPassword(), user.getPassword())) {
             return ResponseEntity.badRequest().body("Old password does not match");
         }
-        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setPassword(passwordEncoder.encode(changePasswordDTO.getNewPassword()));
         userRepository.save(user);
         return ResponseEntity.ok("Password changed");
     }

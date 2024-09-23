@@ -7,6 +7,7 @@ import com.sidibrahim.Aman.entity.User;
 import com.sidibrahim.Aman.exception.GenericException;
 import com.sidibrahim.Aman.mapper.AgencyMapper;
 import com.sidibrahim.Aman.mapper.UserMapper;
+import com.sidibrahim.Aman.repository.AgencyRepository;
 import com.sidibrahim.Aman.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -30,13 +31,15 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final AgencyService agencyService;
     private final AgencyMapper agencyMapper;
+    private final AgencyRepository agencyRepository;
 
-    public UserService(UserRepository userRepository, UserMapper userMapper, PasswordEncoder passwordEncoder, AgencyService agencyService, AgencyMapper agencyMapper) {
+    public UserService(UserRepository userRepository, UserMapper userMapper, PasswordEncoder passwordEncoder, AgencyService agencyService, AgencyMapper agencyMapper, AgencyRepository agencyRepository) {
         this.userRepository = userRepository;
         this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
         this.agencyService = agencyService;
         this.agencyMapper = agencyMapper;
+        this.agencyRepository = agencyRepository;
     }
 
     @Transactional
@@ -52,7 +55,10 @@ public class UserService {
         log.info("user password: {}", userDto.getPassword());
         User userEntity = userMapper.toUser(userDto);
         log.info("user entity: {}", userEntity);
+        Agency agency = agencyRepository.findById(userDto.getAgencyId())
+                .orElseThrow(()->new GenericException("Agency Not Found"));
         userEntity.setEnabled(true);
+        userEntity.setAgency(agency);
         User savedUser = userRepository.save(userEntity);
         log.info("saved user: {}", savedUser);
         return userMapper.toUserDto(savedUser);

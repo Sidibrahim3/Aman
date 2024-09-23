@@ -2,6 +2,8 @@ package com.sidibrahim.Aman.controller;
 
 import com.sidibrahim.Aman.dto.EmailDetailsDto;
 import com.sidibrahim.Aman.dto.UserDto;
+import com.sidibrahim.Aman.entity.User;
+import com.sidibrahim.Aman.repository.UserRepository;
 import com.sidibrahim.Aman.service.SendMailService;
 import com.sidibrahim.Aman.service.TransactionService;
 import com.sidibrahim.Aman.service.UserService;
@@ -25,11 +27,13 @@ public class ReportController {
     private final TransactionService transactionService;
     private final SendMailService sendMailService;
     private final UserService userService;
+    private final UserRepository userRepository;
 
-    public ReportController(TransactionService transactionService, SendMailService sendMailService, UserService userService) {
+    public ReportController(TransactionService transactionService, SendMailService sendMailService, UserService userService, UserRepository userRepository) {
         this.transactionService = transactionService;
         this.sendMailService = sendMailService;
         this.userService = userService;
+        this.userRepository = userRepository;
     }
 
     @PostMapping("/all-transactions")
@@ -59,8 +63,10 @@ public class ReportController {
 
     private ResponseEntity<String> getStringResponseEntity(LocalDate localDate, byte[] pdfData) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserDto userDto = userService.getUserByPhoneNumber(authentication.getName());
-        String email = userDto.getEmail();
+        //UserDto userDto = userService.getUserByPhoneNumber(authentication.getName());
+       // String email = userDto.getEmail();
+        User user = userRepository.findUserByPhoneNumber(authentication.getName()).get();
+        String email = user.getAgency().getEmail();
         EmailDetailsDto emailDetailsDto = new EmailDetailsDto();
         emailDetailsDto.setEmailBody("Hello from AmanSystem here is the report of "+localDate);
         emailDetailsDto.setRecipient(email);
