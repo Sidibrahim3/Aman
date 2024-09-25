@@ -39,6 +39,7 @@ public class UserMapper {
                 .role(user.getRole())
                 .phoneNumber(user.getPhoneNumber())
                 .email(user.getEmail())
+                .agencyName(user.getAgency()!=null?user.getAgency().getName():"N/A")
                 .agencyId(user.getAgency() != null ? user.getAgency().getId() : null)
                 .build();
     }

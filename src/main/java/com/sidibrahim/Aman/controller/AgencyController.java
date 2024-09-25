@@ -69,7 +69,7 @@ public class AgencyController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('SUPER_ADMIN')")
-    public ResponseEntity<ResponseMessage> addAgency(@RequestBody Agency agency) {
+    public ResponseEntity<ResponseMessage> addAgency(@RequestBody AgencyDto agency) {
         return ResponseEntity.ok(ResponseMessage
                 .builder()
                 .message("Agency Added successfully")

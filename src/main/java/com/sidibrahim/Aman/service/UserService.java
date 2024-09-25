@@ -17,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -59,6 +60,8 @@ public class UserService {
                 .orElseThrow(()->new GenericException("Agency Not Found"));
         userEntity.setEnabled(true);
         userEntity.setAgency(agency);
+        userEntity.setCreateDate(LocalDateTime.now());
+        userEntity.setUpdateDate(LocalDateTime.now());
         User savedUser = userRepository.save(userEntity);
         log.info("saved user: {}", savedUser);
         return userMapper.toUserDto(savedUser);
@@ -66,7 +69,7 @@ public class UserService {
 
     public Page<UserDto> getAllUsers(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<User> userPage = userRepository.findAll(pageable);
+        Page<User> userPage = userRepository.findAllUsers(pageable);
         return userPage.map(userMapper::toUserDto);
     }
 

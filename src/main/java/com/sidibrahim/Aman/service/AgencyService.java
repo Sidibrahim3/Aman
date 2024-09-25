@@ -5,11 +5,13 @@ import com.sidibrahim.Aman.entity.Agency;
 import com.sidibrahim.Aman.exception.GenericException;
 import com.sidibrahim.Aman.mapper.AgencyMapper;
 import com.sidibrahim.Aman.repository.AgencyRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -19,7 +21,10 @@ public class AgencyService {
     private final AgencyRepository agencyRepository;
     private final AgencyMapper agencyMapper;
 
-    public AgencyDto save(Agency agency){
+    @Transactional
+    public AgencyDto save(AgencyDto agencyDto){
+        Agency agency = agencyMapper.toAgency(agencyDto);
+        agency.setCreateDate(LocalDate.now());
         return agencyMapper.toAgencyDto(agencyRepository.save(agency));
     }
 

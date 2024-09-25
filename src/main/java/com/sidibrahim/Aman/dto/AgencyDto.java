@@ -23,4 +23,6 @@ public class AgencyDto {
     private LocalDate createDate;
 
     private LocalDate updateDate;
+
+    private String email;
 }

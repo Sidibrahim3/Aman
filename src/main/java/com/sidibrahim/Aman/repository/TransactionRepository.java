@@ -78,7 +78,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
      * @param pageable Pagination information.
      * @return A page of non-deleted transactions for the specified agency.
      */
-    @Query("SELECT t FROM Transaction t WHERE t.agency.id = :agencyId AND (t.isDeleted = false OR t.isDeleted IS NULL)")
+    @Query("SELECT t FROM Transaction t WHERE t.agency.id = :agencyId AND (t.isDeleted = false OR t.isDeleted IS NULL) ORDER BY t.updateDate DESC")
     Page<Transaction> findAllActiveTransactionsByAgencyId(@Param("agencyId") Long agencyId, Pageable pageable);
 
     /**
@@ -91,4 +91,9 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     @Query("SELECT t FROM Transaction t WHERE t.agency.id = :agencyId AND t.isDeleted = true")
     Page<Transaction> findAllDeletedTransactionsByAgencyId(@Param("agencyId") Long agencyId, Pageable pageable);
 
+    @Query("SELECT t FROM Transaction t WHERE " +
+            "(t.customerPhoneNumber LIKE %:keyword% OR CAST(t.reference AS string) LIKE %:keyword%) " +
+            "AND t.agency.id = :agencyId " +
+            "ORDER BY t.updateDate DESC")
+    Page<Transaction> searchTransactionsByKeyword(String keyword, Long agencyId, Pageable pageable);
 }

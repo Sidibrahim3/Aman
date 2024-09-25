@@ -18,4 +18,5 @@ public class UserDto {
     private LocalDateTime updateDate;
     private Role role;
     private Long agencyId;
+    private String agencyName;
 }

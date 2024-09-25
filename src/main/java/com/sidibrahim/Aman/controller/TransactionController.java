@@ -8,6 +8,8 @@ import com.sidibrahim.Aman.entity.User;
 import com.sidibrahim.Aman.enums.TransactionType;
 import com.sidibrahim.Aman.service.TransactionService;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -232,5 +234,34 @@ public class TransactionController {
         headers.setContentDispositionFormData("attachment", "transactions.pdf");
 
         return ResponseEntity.ok().headers(headers).body(pdfData);
+    }
+
+    @PutMapping("/{transactionId}")
+    public ResponseEntity<TransactionDto> updateTransaction(
+            @PathVariable Long transactionId,
+            @RequestBody TransactionDto transactionDto) {
+
+        TransactionDto updatedTransaction = transactionService.updateTransaction(transactionId, transactionDto);
+
+        return ResponseEntity.ok(updatedTransaction);
+    }
+
+
+    @GetMapping("/search")
+    //Page<TransactionDto>
+    public ResponseEntity<ResponseMessage> searchTransactions(@RequestParam String keyword,
+                                                @RequestParam(defaultValue = "0") int page,
+                                                @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<TransactionDto> transactionsPage = transactionService.searchTransactions(keyword, pageable);
+        PaginationData paginationData = new PaginationData(transactionsPage);
+        return ResponseEntity.ok(ResponseMessage
+                .builder()
+                        .message("Retrieved search results")
+                        .status(200)
+                        .data(transactionsPage.getContent())
+                        .meta(paginationData)
+                .build());
+        //;
     }
 }

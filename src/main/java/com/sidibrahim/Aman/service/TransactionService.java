@@ -20,6 +20,7 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -51,10 +52,13 @@ public class TransactionService {
         this.userRepository = userRepository;
     }
 
+    @Transactional
     public TransactionDto save(Transaction transaction, @AuthenticationPrincipal User user) {
         transaction.setAgency(user.getAgency());
         transaction.setCreateDate(LocalDateTime.now());
         transaction.setAgent(user);
+        transaction.setCreateDate(LocalDateTime.now());
+        transaction.setUpdateDate(LocalDateTime.now());
         return transactionMapper
                 .toTransactionDto(transactionRepository
                         .save(transaction));
@@ -63,7 +67,13 @@ public class TransactionService {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         User user = userRepository.findUserByPhoneNumber(auth.getName()).get();
-        Long agencyId = user.getAgency().getId();
+        Long agencyId;
+        if(user.getAgency()!=null){
+            agencyId = user.getAgency().getId();
+        }
+        else {
+            throw new GenericException("Agency Null ");
+        }
         return transactionMapper.toTransactionDtos(transactionRepository.findAllActiveTransactionsByAgencyId(agencyId,PageRequest.of(page, size)));
     }
     public Page<TransactionDto> findAllDeletedTransactions(int page, int size) {
@@ -332,6 +342,53 @@ public class TransactionService {
             contentStream.beginText();
         }
         contentStream.endText();
+    }
+
+    @Transactional
+    public TransactionDto updateTransaction(Long transactionId, TransactionDto transactionDto) {
+        // Find the existing transaction by ID
+        Transaction existingTransaction = transactionRepository.findById(transactionId)
+                .orElseThrow(() -> new GenericException("Transaction not found"));
+
+        // Check and update fields only if they are not null
+        if (transactionDto.getAmount() != null) {
+            existingTransaction.setAmount(transactionDto.getAmount());
+        }
+        if (transactionDto.getReference() != null) {
+            existingTransaction.setReference(transactionDto.getReference());
+        }
+        if (transactionDto.getCustomerPhoneNumber() != null) {
+            existingTransaction.setCustomerPhoneNumber(transactionDto.getCustomerPhoneNumber());
+        }
+        if (transactionDto.getType() != null) {
+            existingTransaction.setType(transactionDto.getType());
+        }
+        if (transactionDto.getEarn() != null) {
+            existingTransaction.setEarn(transactionDto.getEarn());
+        }
+        if (transactionDto.getNote() != null) {
+            existingTransaction.setNote(transactionDto.getNote());
+        }
+        if (transactionDto.getCustomerOtp() != null) {
+            existingTransaction.setCustomerOtp(transactionDto.getCustomerOtp());
+        }
+
+        // Set the update date
+        existingTransaction.setUpdateDate(LocalDateTime.now());
+
+        // Save the updated transaction
+        Transaction updatedTransaction = transactionRepository.save(existingTransaction);
+
+        // Return the updated transaction as a DTO
+        return transactionMapper.toTransactionDto(updatedTransaction);
+    }
+
+    public Page<TransactionDto> searchTransactions(String keyword, Pageable pageable) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = (User)authentication.getPrincipal();
+        log.info("ttt"+user.getAgency().getId());
+        Long agencyId = user.getAgency().getId();
+        return transactionMapper.toTransactionDtos(transactionRepository.searchTransactionsByKeyword(keyword, agencyId,pageable));
     }
 
 }

@@ -18,6 +18,7 @@ public class AgencyMapper {
                 .name(agencyDto.getName())
                 .agencyCode(agencyDto.getAgencyCode())
                 .address(agencyDto.getAddress())
+                .email(agencyDto.getEmail())
                 .build();
     }
 
@@ -28,6 +29,7 @@ public class AgencyMapper {
                 .agencyCode(agency.getAgencyCode())
                 .address(agency.getAddress())
                 .createDate(agency.getCreateDate())
+                .email(agency.getEmail())
                 .build();
     }
 
