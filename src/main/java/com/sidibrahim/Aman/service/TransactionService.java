@@ -171,6 +171,22 @@ public class TransactionService {
                 .map(BigDecimal::valueOf)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+        // Calculate total deposits and withdrawals
+        BigDecimal totalDeposits = transactions.stream()
+                .filter(transaction -> transaction.getType() == TransactionType.DEPOSIT)
+                .map(Transaction::getAmount)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalWithdrawals = transactions.stream()
+                .filter(transaction -> transaction.getType() == TransactionType.WITHDRAWAL)
+                .map(Transaction::getAmount)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Calculate net cash
+        BigDecimal netCash = totalDeposits.subtract(totalWithdrawals);
+
         List<ExportTransactionDto> exportData = transactions.stream()
                 .map(transaction -> new ExportTransactionDto(
                         transaction.getAmount(),
@@ -181,8 +197,9 @@ public class TransactionService {
                 ))
                 .collect(Collectors.toList());
 
-        return new ExportDataDto(exportData, totalEarning);
+        return new ExportDataDto(exportData, totalEarning, totalDeposits, totalWithdrawals, netCash);
     }
+
 
     public byte[] exportToExcel(LocalDateTime startDate, LocalDateTime endDate) {
         ExportDataDto exportDataDto = prepareExportData(startDate, endDate);
@@ -216,6 +233,20 @@ public class TransactionService {
             totalRow.createCell(0).setCellValue("Total Earnings:");
             totalRow.createCell(1).setCellValue(totalEarnings.toPlainString());
 
+            // Add total deposits and withdrawals rows
+            Row totalDepositRow = sheet.createRow(rowNum++);
+            totalDepositRow.createCell(0).setCellValue("Total Deposits:");
+            totalDepositRow.createCell(1).setCellValue(exportDataDto.getTotalDeposits().toPlainString());
+
+            Row totalWithdrawalRow = sheet.createRow(rowNum++);
+            totalWithdrawalRow.createCell(0).setCellValue("Total Withdrawals:");
+            totalWithdrawalRow.createCell(1).setCellValue(exportDataDto.getTotalWithdrawals().toPlainString());
+
+            Row netCashRow = sheet.createRow(rowNum++);
+            netCashRow.createCell(0).setCellValue("Net Cash:");
+            netCashRow.createCell(1).setCellValue(exportDataDto.getNetCash().toPlainString());
+
+
             workbook.write(out);
             return out.toByteArray();
         } catch (Exception e) {
@@ -230,6 +261,8 @@ public class TransactionService {
         BigDecimal totalEarnings = exportDataDto.getTotalEarning();
         int transactionCount = transactions.size();
 
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
         // Format date and time without milliseconds
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         String reportGenerationTime = LocalDateTime.now().format(dateTimeFormatter); // Current report generation time
@@ -243,8 +276,8 @@ public class TransactionService {
 
             // Add Title
             contentStream.beginText();
-            contentStream.newLineAtOffset(200, 750); // Centered title
-            contentStream.showText("Transaction Report");
+            contentStream.newLineAtOffset(150, 750); // Centered title
+            contentStream.showText("Transaction Report for Agent : "+user.getName());
             contentStream.endText();
 
             // Define starting Y position for the table and column widths
@@ -286,6 +319,15 @@ public class TransactionService {
             // Add Total Earnings under the Earn column
             yPosition -= 20;
             drawTableRow(contentStream, yPosition, columnWidths, new String[]{"Total Earning ", totalEarnings.toPlainString()}, false);
+
+            yPosition -= 20;
+            drawTableRow(contentStream, yPosition, columnWidths, new String[]{"Total Deposit ", exportDataDto.getTotalDeposits().toPlainString()}, false);
+
+            yPosition -= 20;
+            drawTableRow(contentStream, yPosition, columnWidths, new String[]{"Total Withdrawal ", exportDataDto.getTotalWithdrawals().toPlainString()}, false);
+
+            yPosition -= 20;
+            drawTableRow(contentStream, yPosition, columnWidths, new String[]{"Net Cash ", exportDataDto.getNetCash().toPlainString()}, false);
 
             // Number of transactions and report generation date at the bottom of the page
             contentStream.setFont(PDType1Font.HELVETICA, 8); // Small font size for additional details

@@ -9,4 +9,7 @@ import java.util.List;
 public class ExportDataDto {
     private List<ExportTransactionDto> transactions;
     private BigDecimal totalEarning;
+    private BigDecimal totalDeposits;
+    private BigDecimal totalWithdrawals;
+    private BigDecimal netCash;
 }
