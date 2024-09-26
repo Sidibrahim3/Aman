@@ -96,4 +96,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
             "AND t.agency.id = :agencyId " +
             "ORDER BY t.updateDate DESC")
     Page<Transaction> searchTransactionsByKeyword(String keyword, Long agencyId, Pageable pageable);
+
+    @Query("SELECT t FROM Transaction t WHERE t.agent.id = :agentId AND (t.isDeleted = false OR t.isDeleted IS NULL) ORDER BY t.updateDate DESC")
+    Page<Transaction> findByAgentIdAndNotDeletedOrderByUpdateDateDesc(@Param("agentId") Long agentId, Pageable pageable);
+
 }

@@ -66,15 +66,17 @@ public class TransactionService {
     public Page<TransactionDto> findAll(int page, int size) {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        User user = userRepository.findUserByPhoneNumber(auth.getName()).get();
+       /* User user = userRepository.findUserByPhoneNumber(auth.getName()).get();
         Long agencyId;
         if(user.getAgency()!=null){
             agencyId = user.getAgency().getId();
-        }
-        else {
+        }*/
+        /*else {
             throw new GenericException("Agency Null ");
-        }
-        return transactionMapper.toTransactionDtos(transactionRepository.findAllActiveTransactionsByAgencyId(agencyId,PageRequest.of(page, size)));
+        }*/
+        User user = (User) auth.getPrincipal();
+        //return transactionMapper.toTransactionDtos(transactionRepository.findAllActiveTransactionsByAgencyId(agencyId,PageRequest.of(page, size)));
+        return transactionMapper.toTransactionDtos(transactionRepository.findByAgentIdAndNotDeletedOrderByUpdateDateDesc(user.getId(),PageRequest.of(page,size)));
     }
     public Page<TransactionDto> findAllDeletedTransactions(int page, int size) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
