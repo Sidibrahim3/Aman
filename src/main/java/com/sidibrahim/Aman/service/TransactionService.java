@@ -266,6 +266,9 @@ public class TransactionService {
         // Format date and time without milliseconds
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         String reportGenerationTime = LocalDateTime.now().format(dateTimeFormatter); // Current report generation time
+        DateTimeFormatter dateTimeFormatter2 = DateTimeFormatter.ofPattern("MM-dd HH:mm");
+        String startDateFormatted = startDate.format(dateTimeFormatter2);
+        String endDateFormatted = endDate.format(dateTimeFormatter2);
 
         try (PDDocument document = new PDDocument(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             PDPage page = new PDPage();
@@ -335,6 +338,8 @@ public class TransactionService {
             contentStream.beginText();
             contentStream.newLineAtOffset(50, yPosition);
             contentStream.showText("Number of Transactions: " + transactionCount);
+            contentStream.newLineAtOffset(0, -10);
+            contentStream.showText("Report from : "+startDateFormatted+" To "+endDateFormatted);
             contentStream.newLineAtOffset(0, -10);
             contentStream.showText("Report Generated on: " + reportGenerationTime);
             contentStream.endText();
