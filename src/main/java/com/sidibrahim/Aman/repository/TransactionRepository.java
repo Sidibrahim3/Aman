@@ -66,10 +66,11 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     @Modifying
     @Query("UPDATE Transaction t SET t.isDeleted = true WHERE t.createDate BETWEEN :startDate AND :endDate")
     void softDeleteTransactionsByDateRange(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
-        @Query("SELECT t FROM Transaction t WHERE t.createDate BETWEEN :startDate AND :endDate AND t.agent.id = :userId")
-        List<Transaction> findTransactionsByDateRangeAndUserId(@Param("startDate") LocalDateTime startDate,
-                                                               @Param("endDate") LocalDateTime endDate,
-                                                               @Param("userId") Long userId);
+
+    @Query("SELECT t FROM Transaction t WHERE t.createDate BETWEEN :startDate AND :endDate AND t.agent.id = :userId AND (t.isDeleted = false OR t.isDeleted IS NULL) ORDER BY t.updateDate DESC")
+    List<Transaction> findTransactionsByDateRangeAndUserId(@Param("startDate") LocalDateTime startDate,
+                                                           @Param("endDate") LocalDateTime endDate,
+                                                           @Param("userId") Long userId);
 
     /**
      * Retrieves a paginated list of active (non-deleted) transactions for a specific agency.

@@ -50,10 +50,18 @@ public class ReportController {
     }
 
     @PostMapping("/daily-report")
-    public ResponseEntity<String> sendDailyReport(){
+    public ResponseEntity<String> sendDailyReport(@RequestParam(name = "startDate",required = false) LocalDateTime startDate,
+                                                  @RequestParam(name = "endDate",required = false) LocalDateTime endDate){
         try {
+            LocalDateTime defaultStartDate = LocalDate.now().atTime(2, 0,0);
             LocalDate localDate = LocalDate.now();
-            byte[] pdfData = transactionService.exportToPdf(LocalDate.now().atTime(2, 0,0),LocalDateTime.now());
+            byte[] pdfData;
+            if (startDate==null || endDate==null){
+                pdfData = transactionService.exportToPdf(defaultStartDate,LocalDateTime.now());
+            }
+            else {
+                pdfData = transactionService.exportToPdf(startDate,endDate);
+            }
             return getStringResponseEntity(localDate, pdfData);
         } catch (Exception e){
             log.error("Exception Occurred :=> "+e.getMessage() );
