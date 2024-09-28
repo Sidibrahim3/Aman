@@ -275,122 +275,116 @@ public class TransactionService {
             document.addPage(page);
 
             PDPageContentStream contentStream = new PDPageContentStream(document, page);
+
+            // Ensure font is set before any text rendering
             contentStream.setFont(PDType1Font.HELVETICA_BOLD, 12);
 
             // Add Title
             contentStream.beginText();
-            contentStream.newLineAtOffset(150, 750); // Centered title
-            contentStream.showText("Transaction Report for Agent : "+user.getName());
+            contentStream.setFont(PDType1Font.HELVETICA_BOLD, 12); // Set font
+            contentStream.newLineAtOffset(100, 750); // Adjusted title position
+            contentStream.showText("Transaction Report for Agent: " + user.getName());
+            contentStream.endText();
+
+            // Add Date Range
+            contentStream.beginText();
+            contentStream.setFont(PDType1Font.HELVETICA_BOLD, 12); // Set font
+            contentStream.newLineAtOffset(100, 730);
+            contentStream.showText("Date Range: " + startDateFormatted + " to " + endDateFormatted);
+            contentStream.endText();
+
+            // Add Report Generation Time
+            contentStream.beginText();
+            contentStream.setFont(PDType1Font.HELVETICA_BOLD, 12); // Set font
+            contentStream.newLineAtOffset(100, 710);
+            contentStream.showText("Report Generated At: " + reportGenerationTime);
             contentStream.endText();
 
             // Define starting Y position for the table and column widths
-            int yPosition = 700;
+            int yPosition = 680;
             int[] columnWidths = {70, 100, 120, 70, 50}; // Column widths for Amount, Reference, Phone, Type, Earn
 
             // Add Table Header
             contentStream.setFont(PDType1Font.HELVETICA_BOLD, 10);
-            drawTableRow(contentStream, yPosition, columnWidths, new String[]{"Earn", "Reference", "Phone Number", "Type", "Amount"}, true);
+            drawTableRow(contentStream, yPosition, columnWidths, new String[]{"Amount", "Reference", "Phone Number", "Type", "Earn"}, true);
 
-            // Draw a line below the header
-            yPosition -= 20;
-
+            yPosition -= 20; // Adjust row height after header
             contentStream.setFont(PDType1Font.HELVETICA, 10);
 
             // Add Transaction Rows
             for (ExportTransactionDto transaction : transactions) {
-                String[] rowData = new String[]{
-                        transaction.getEarn() != null ? transaction.getEarn().toString() : "N/A",
-                        transaction.getReference() != null ? transaction.getReference().toString() : "N/A",
-                        transaction.getCustomerPhoneNumber() != null ? transaction.getCustomerPhoneNumber() : "N/A",
-                        transaction.getType() != null ? transaction.getType().toString() : "N/A",
-                        transaction.getAmount().toPlainString()
-                };
-
-                drawTableRow(contentStream, yPosition, columnWidths, rowData, false);
-                yPosition -= 20;
-
-                // Add a new page if the content exceeds the current page
-                if (yPosition < 50) {
-                    contentStream.close();
+                if (yPosition < 100) {
+                    contentStream.close(); // End current page
                     page = new PDPage();
                     document.addPage(page);
                     contentStream = new PDPageContentStream(document, page);
-                    yPosition = 700; // Reset Y position for the new page
+                    yPosition = 700; // Reset position for the new page
+                    contentStream.setFont(PDType1Font.HELVETICA, 10); // Set font for the new page
                 }
+
+                String[] row = new String[]{
+                        transaction.getAmount().toPlainString(),
+                        transaction.getReference().toString(),
+                        transaction.getCustomerPhoneNumber(),
+                        transaction.getType().toString(),
+                        transaction.getEarn().toString()
+                };
+
+                drawTableRow(contentStream, yPosition, columnWidths, row, false);
+                yPosition -= 20;
             }
 
-            // Add Total Earnings under the Earn column
-            yPosition -= 20;
-            drawTableRow(contentStream, yPosition, columnWidths, new String[]{"Total Earning ", totalEarnings.toPlainString()}, false);
-
-            yPosition -= 20;
-            drawTableRow(contentStream, yPosition, columnWidths, new String[]{"Total Deposit ", exportDataDto.getTotalDeposits().toPlainString()}, false);
-
-            yPosition -= 20;
-            drawTableRow(contentStream, yPosition, columnWidths, new String[]{"Total Withdrawal ", exportDataDto.getTotalWithdrawals().toPlainString()}, false);
-
-            yPosition -= 20;
-            drawTableRow(contentStream, yPosition, columnWidths, new String[]{"Net Cash ", exportDataDto.getNetCash().toPlainString()}, false);
-
-            // Number of transactions and report generation date at the bottom of the page
-            contentStream.setFont(PDType1Font.HELVETICA, 8); // Small font size for additional details
-            yPosition -= 40;
+            // Add Summary Section in a Separate Table
+            yPosition -= 40; // Space between table and summary
+            contentStream.setFont(PDType1Font.HELVETICA_BOLD, 12); // Set font
             contentStream.beginText();
-            contentStream.newLineAtOffset(50, yPosition);
-            contentStream.showText("Number of Transactions: " + transactionCount);
-            contentStream.newLineAtOffset(0, -10);
-            contentStream.showText("Report from : "+startDateFormatted+" To "+endDateFormatted);
-            contentStream.newLineAtOffset(0, -10);
-            contentStream.showText("Report Generated on: " + reportGenerationTime);
+            contentStream.newLineAtOffset(100, yPosition);
+            contentStream.showText("Summary:");
             contentStream.endText();
 
-            contentStream.close();
+            yPosition -= 20;
+
+            // Define summary table column widths and add rows
+            int[] summaryColumnWidths = {120, 100};
+            drawTableRow(contentStream, yPosition, summaryColumnWidths, new String[]{"Total Transactions:", String.valueOf(transactionCount)}, false);
+            yPosition -= 20;
+            drawTableRow(contentStream, yPosition, summaryColumnWidths, new String[]{"Total Earnings:", totalEarnings.toPlainString()}, false);
+            yPosition -= 20;
+            drawTableRow(contentStream, yPosition, summaryColumnWidths, new String[]{"Total Deposits:", exportDataDto.getTotalDeposits().toPlainString()}, false);
+            yPosition -= 20;
+            drawTableRow(contentStream, yPosition, summaryColumnWidths, new String[]{"Total Withdrawals:", exportDataDto.getTotalWithdrawals().toPlainString()}, false);
+            yPosition -= 20;
+            drawTableRow(contentStream, yPosition, summaryColumnWidths, new String[]{"Net Cash:", exportDataDto.getNetCash().toPlainString()}, false);
+
+            contentStream.close(); // Close the content stream
             document.save(out);
+            document.close();
+
             return out.toByteArray();
-        } catch (Exception e) {
-            throw new GenericException("Error generating PDF file: " + e.getMessage());
+        } catch (IOException e) {
+            throw new GenericException("Error generating PDF report: " + e.getMessage());
         }
     }
 
-    // Helper method to draw each row in the table
-    private void drawTableRow(PDPageContentStream contentStream, int yPosition, int[] columnWidths, String[] rowData, boolean isHeader) throws IOException {
-        int xPosition = 50;
-        int height = 20;
-
-        contentStream.setStrokingColor(Color.BLACK);
-        contentStream.setNonStrokingColor(isHeader ? Color.LIGHT_GRAY : Color.WHITE);
-
-        // Draw cell background and borders
-        for (int i = 0; i < columnWidths.length; i++) {
-            contentStream.addRect(xPosition, yPosition, columnWidths[i], height);
-            contentStream.fill();
-            contentStream.moveTo(xPosition, yPosition);
-            contentStream.lineTo(xPosition, yPosition + height);
-            contentStream.stroke();
-            xPosition += columnWidths[i];
-        }
-
-        // Draw cell borders
-        xPosition = 50;
-        contentStream.setNonStrokingColor(Color.BLACK); // Set font color to black
-        for (int i = 0; i < columnWidths.length; i++) {
-            contentStream.addRect(xPosition, yPosition, columnWidths[i], height);
-            contentStream.stroke();
-            xPosition += columnWidths[i];
-        }
-
-        // Add text into each cell
-        contentStream.beginText();
-        contentStream.setFont(PDType1Font.HELVETICA_BOLD, isHeader ? 10 : 8);
-        xPosition = 50;
-        for (int i = 0; i < rowData.length; i++) {
-            contentStream.newLineAtOffset(xPosition + 5, yPosition + 5); // Slight padding for text
-            contentStream.showText(rowData[i]);
+    // Helper method to draw a table row
+    private void drawTableRow(PDPageContentStream contentStream, int yPosition, int[] columnWidths, String[] content, boolean isHeader) throws IOException {
+        contentStream.setFont(PDType1Font.HELVETICA, 10); // Set font before drawing row content
+        int xPosition = 100;
+        for (int i = 0; i < content.length; i++) {
+            contentStream.beginText();
+            contentStream.newLineAtOffset(xPosition, yPosition);
+            contentStream.showText(content[i]);
             contentStream.endText();
             xPosition += columnWidths[i];
-            contentStream.beginText();
         }
-        contentStream.endText();
+
+        // Draw the border for the row if it's a header
+        if (isHeader) {
+            contentStream.setStrokingColor(Color.BLACK);
+            contentStream.moveTo(100, yPosition - 5);
+            contentStream.lineTo(500, yPosition - 5);
+            contentStream.stroke();
+        }
     }
 
     @Transactional
