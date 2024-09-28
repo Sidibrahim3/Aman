@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 public class ExportTransactionDto {
     private BigDecimal amount;
     private Long reference;
-    private TransactionType type;
+    private String type;
     private String customerPhoneNumber;
     private Double earn;
 }
