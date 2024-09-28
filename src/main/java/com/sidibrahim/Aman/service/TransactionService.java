@@ -34,6 +34,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -312,11 +313,11 @@ public class TransactionService {
 
             // Définir la position Y de départ pour le tableau et les largeurs de colonnes
             int yPosition = 680;
-            int[] columnWidths = {70, 100, 120, 70, 50}; // Largeurs des colonnes pour Montant, Référence, Téléphone, Type, Gain
+            int[] columnWidths = {70, 100, 120, 70, 50}; // Largeurs des colonnes pour Gain, Référence, Téléphone, Type, Montant
 
-            // Ajouter l'en-tête du tableau
+            // Ajouter l'en-tête du tableau avec texte en gras
             contentStream.setFont(PDType1Font.HELVETICA_BOLD, 10);
-            drawTableRow(contentStream, yPosition, columnWidths, new String[]{"Montant", "Référence", "Téléphone", "Type", "Gain"}, true);
+            drawTableRow(contentStream, yPosition, columnWidths, new String[]{"Gain", "Référence", "Téléphone", "Type", "Montant"}, true);
 
             yPosition -= 20; // Ajuster la hauteur après l'en-tête
             contentStream.setFont(PDType1Font.HELVETICA, 10);
@@ -333,11 +334,11 @@ public class TransactionService {
                 }
 
                 String[] row = new String[]{
-                        transaction.getAmount().toPlainString(),
+                        transaction.getEarn().toString(),   // Gain
                         transaction.getReference().toString(),
                         transaction.getCustomerPhoneNumber(),
                         transaction.getType().toString(),
-                        transaction.getEarn().toString()
+                        transaction.getAmount().toPlainString() // Montant
                 };
 
                 drawTableRow(contentStream, yPosition, columnWidths, row, false);
@@ -356,8 +357,7 @@ public class TransactionService {
 
             // Définir les largeurs des colonnes pour le récapitulatif et ajouter les lignes
             int[] summaryColumnWidths = {120, 100};
-            drawTableRow(contentStream, yPosition, summaryColumnWidths, new String[]{"Total des " +
-                    "transactions : ", String.valueOf(transactionCount)}, false);
+            drawTableRow(contentStream, yPosition, summaryColumnWidths, new String[]{"Total transactions : ", String.valueOf(transactionCount)}, false);
             yPosition -= 20;
             drawTableRow(contentStream, yPosition, summaryColumnWidths, new String[]{"Total des gains : ", totalEarnings.toPlainString()}, false);
             yPosition -= 20;
@@ -377,24 +377,34 @@ public class TransactionService {
         }
     }
 
-    // Méthode auxiliaire pour dessiner une ligne du tableau
+    // Méthode auxiliaire pour dessiner une ligne du tableau avec bordure et padding
     private void drawTableRow(PDPageContentStream contentStream, int yPosition, int[] columnWidths, String[] content, boolean isHeader) throws IOException {
-        contentStream.setFont(PDType1Font.HELVETICA, 10); // Définir la police avant de dessiner le contenu de la ligne
+        int padding = 5; // Padding entre les colonnes
         int xPosition = 100;
+
         for (int i = 0; i < content.length; i++) {
             contentStream.beginText();
-            contentStream.newLineAtOffset(xPosition, yPosition);
+            contentStream.newLineAtOffset(xPosition + padding, yPosition); // Ajouter du padding
             contentStream.showText(content[i]);
             contentStream.endText();
             xPosition += columnWidths[i];
         }
 
-        // Dessiner la bordure de la ligne si c'est un en-tête
+        // Dessiner la ligne horizontale sous la ligne si c'est un en-tête
         if (isHeader) {
             contentStream.setStrokingColor(Color.BLACK);
             contentStream.moveTo(100, yPosition - 5);
-            contentStream.lineTo(500, yPosition - 5);
+            contentStream.lineTo(100 + columnWidths[0] + columnWidths[1] + columnWidths[2] + columnWidths[3] + columnWidths[4], yPosition - 5);
             contentStream.stroke();
+        }
+
+        // Dessiner les lignes verticales pour les colonnes
+        xPosition = 100;
+        for (int i = 0; i <= content.length; i++) {
+            contentStream.moveTo(xPosition, yPosition + 5);  // Ajuster pour créer un espacement vertical
+            contentStream.lineTo(xPosition, yPosition - 15);
+            contentStream.stroke();
+            xPosition += (i < content.length) ? columnWidths[i] : 0;
         }
     }
 
