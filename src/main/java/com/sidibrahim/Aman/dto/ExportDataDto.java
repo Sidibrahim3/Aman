@@ -12,4 +12,5 @@ public class ExportDataDto {
     private BigDecimal totalDeposits;
     private BigDecimal totalWithdrawals;
     private BigDecimal netCash;
+    private BigDecimal budget;
 }

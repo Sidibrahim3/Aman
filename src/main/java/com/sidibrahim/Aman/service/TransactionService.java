@@ -12,8 +12,6 @@ import com.sidibrahim.Aman.mapper.TransactionMapper;
 import com.sidibrahim.Aman.repository.AgencyRepository;
 import com.sidibrahim.Aman.repository.TransactionRepository;
 import com.sidibrahim.Aman.repository.UserRepository;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -55,12 +53,14 @@ public class TransactionService {
     private final TransactionMapper transactionMapper;
     private final UserRepository userRepository;
     private final AgencyService agencyService;
+    private final AgencyRepository agencyRepository;
 
-    public TransactionService(TransactionRepository transactionRepository, TransactionMapper transactionMapper, UserRepository userRepository,@Lazy AgencyService agencyService) {
+    public TransactionService(TransactionRepository transactionRepository, TransactionMapper transactionMapper, UserRepository userRepository, @Lazy AgencyService agencyService, AgencyRepository agencyRepository) {
         this.transactionRepository = transactionRepository;
         this.transactionMapper = transactionMapper;
         this.userRepository = userRepository;
         this.agencyService = agencyService;
+        this.agencyRepository = agencyRepository;
     }
 
     @Transactional
@@ -213,6 +213,9 @@ public class TransactionService {
         // Calculate net cash
         BigDecimal netCash = totalDeposits.subtract(totalWithdrawals);
 
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        User user = (User) auth.getPrincipal();
+        Agency agency = agencyRepository.findById(user.getAgency().getId()).orElseThrow(()->new GenericException("Agency Not Found Exception"));
         List<ExportTransactionDto> exportData = transactions.stream()
                 .map(transaction -> new ExportTransactionDto(
                         transaction.getAmount(),
@@ -222,14 +225,14 @@ public class TransactionService {
                         transaction.getEarn()
                 ))
                 .collect(Collectors.toList());
-        return new ExportDataDto(exportData, totalEarning, totalDeposits, totalWithdrawals, netCash);
+        return new ExportDataDto(exportData, totalEarning, totalDeposits, totalWithdrawals, netCash,agency.getBudget());
     }
     private String translateType(TransactionType type) {
         return switch (type) {
             case WITHDRAWAL ->  // Ensure this matches the enum
-                    "Retrait"; // Translation for Withdrawal
+                    "R"; // Translation for Withdrawal
             case DEPOSIT ->     // Ensure this matches the enum
-                    "Versement"; // Translation for Deposit
+                    "V"; // Translation for Deposit
             default -> "Inconnu"; // For any undefined type
         };
     }
@@ -280,6 +283,10 @@ public class TransactionService {
             netCashRow.createCell(0).setCellValue("Net Cash:");
             netCashRow.createCell(1).setCellValue(exportDataDto.getNetCash().toPlainString());
 
+            Row budget = sheet.createRow(rowNum++);
+            netCashRow.createCell(0).setCellValue("Budget");
+            netCashRow.createCell(1).setCellValue(exportDataDto.getBudget().toPlainString());
+
 
             workbook.write(out);
             return out.toByteArray();
@@ -312,38 +319,40 @@ public class TransactionService {
             contentStream.setFont(PDType1Font.HELVETICA_BOLD, 12);
             contentStream.beginText();
             contentStream.newLineAtOffset(100, 750);
-            contentStream.showText("Rapport de Transactions pour l'Agent : " + user.getName());
+            contentStream.showText("Rapport de l'Agent : " + user.getName());
             contentStream.endText();
 
             // Add Date Range
             contentStream.beginText();
             contentStream.newLineAtOffset(100, 730);
-            contentStream.showText("Plage de Dates : " + startDateFormatted + " au " + endDateFormatted);
+            contentStream.showText("Du : " + startDateFormatted + " au " + endDateFormatted);
             contentStream.endText();
 
             // Add Report Generation Time
             contentStream.beginText();
             contentStream.newLineAtOffset(100, 710);
-            contentStream.showText("Rapport généré le : " + reportGenerationTime);
+            contentStream.showText("Généré le : " + reportGenerationTime);
             contentStream.endText();
 
             // Add Summary Table
             int yPosition = 680;
-            int[] summaryColumnWidths = {120, 100};
+            int[] summaryColumnWidths = {130, 210};
             drawTableRow(contentStream, yPosition, summaryColumnWidths, new String[]{"Total transactions", String.valueOf(transactionCount)});
             yPosition -= 20;
             drawTableRow(contentStream, yPosition, summaryColumnWidths, new String[]{"Total des gains", totalEarnings.toPlainString()});
             yPosition -= 20;
-            drawTableRow(contentStream, yPosition, summaryColumnWidths, new String[]{"Total des dépôts", exportDataDto.getTotalDeposits().toPlainString()});
+            drawTableRow(contentStream, yPosition, summaryColumnWidths, new String[]{"Total des vérsement", exportDataDto.getTotalDeposits().toPlainString()});
             yPosition -= 20;
             drawTableRow(contentStream, yPosition, summaryColumnWidths, new String[]{"Total des retraits", exportDataDto.getTotalWithdrawals().toPlainString()});
             yPosition -= 20;
             drawTableRow(contentStream, yPosition, summaryColumnWidths, new String[]{"Trésorerie nette", exportDataDto.getNetCash().toPlainString()});
+            yPosition -= 20;
+            drawTableRow(contentStream, yPosition, summaryColumnWidths, new String[]{"Budget", exportDataDto.getBudget().toPlainString()});
 
             yPosition -= 40; // Space between the summary and transaction table
 
             // Transaction Table Headers
-            int[] columnWidths = {70, 100, 120, 70, 50}; // Gain, Reference, Phone, Type, Amount
+            int[] columnWidths = {50, 80, 80, 30, 100}; // Gain, Reference, Phone, Type, Amount
             contentStream.setFont(PDType1Font.HELVETICA_BOLD, 10);
             drawTableRow(contentStream, yPosition, columnWidths, new String[]{"Gain", "Référence", "Téléphone", "Type", "Montant"});
 
@@ -365,7 +374,7 @@ public class TransactionService {
                         transaction.getEarn().toString(),
                         transaction.getReference().toString(),
                         transaction.getCustomerPhoneNumber(),
-                        transaction.getType().toString(),
+                        transaction.getType(),
                         transaction.getAmount().toPlainString()
                 };
 
