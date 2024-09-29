@@ -50,8 +50,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     @Query("SELECT t FROM Transaction t WHERE t.isDeleted = false")
     List<Transaction> findAllNonDeletedTransactions();
 
-    @Query("SELECT t FROM Transaction t WHERE t.createDate >= CURRENT_DATE AND t.isDeleted = false")
-    List<Transaction> findTransactionsForToday();
+    @Query("SELECT t FROM Transaction t WHERE t.createDate >= :startOfDay AND t.createDate <= CURRENT_TIMESTAMP AND (t.isDeleted = false OR t.isDeleted IS NULL) AND t.agent.id = :userId")
+    List<Transaction> findTransactionsForToday(@Param("startOfDay") LocalDateTime startOfDay, @Param("userId") Long userId);
 
     @Query("SELECT t FROM Transaction t WHERE YEAR(t.createDate) = YEAR(CURRENT_DATE) AND MONTH(t.createDate) = MONTH(CURRENT_DATE) AND t.isDeleted = false")
     List<Transaction> findTransactionsForCurrentMonth();

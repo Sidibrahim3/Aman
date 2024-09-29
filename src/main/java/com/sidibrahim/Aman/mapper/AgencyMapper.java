@@ -30,6 +30,7 @@ public class AgencyMapper {
                 .address(agency.getAddress())
                 .createDate(agency.getCreateDate())
                 .email(agency.getEmail())
+                .budget(agency.getBudget())
                 .build();
     }
 

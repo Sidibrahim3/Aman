@@ -3,13 +3,17 @@ package com.sidibrahim.Aman.service;
 import com.sidibrahim.Aman.dto.ExportDataDto;
 import com.sidibrahim.Aman.dto.ExportTransactionDto;
 import com.sidibrahim.Aman.dto.TransactionDto;
+import com.sidibrahim.Aman.entity.Agency;
 import com.sidibrahim.Aman.entity.Transaction;
 import com.sidibrahim.Aman.entity.User;
 import com.sidibrahim.Aman.enums.TransactionType;
 import com.sidibrahim.Aman.exception.GenericException;
 import com.sidibrahim.Aman.mapper.TransactionMapper;
+import com.sidibrahim.Aman.repository.AgencyRepository;
 import com.sidibrahim.Aman.repository.TransactionRepository;
 import com.sidibrahim.Aman.repository.UserRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -18,6 +22,7 @@ import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -31,10 +36,9 @@ import java.awt.Color;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -49,24 +53,39 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final TransactionMapper transactionMapper;
     private final UserRepository userRepository;
+    private final AgencyService agencyService;
 
-    public TransactionService(TransactionRepository transactionRepository, TransactionMapper transactionMapper, UserRepository userRepository) {
+    public TransactionService(TransactionRepository transactionRepository, TransactionMapper transactionMapper, UserRepository userRepository,@Lazy AgencyService agencyService) {
         this.transactionRepository = transactionRepository;
         this.transactionMapper = transactionMapper;
         this.userRepository = userRepository;
+        this.agencyService = agencyService;
     }
 
     @Transactional
     public TransactionDto save(Transaction transaction, @AuthenticationPrincipal User user) {
-        transaction.setAgency(user.getAgency());
+        Agency agency = user.getAgency();
+
+        // Handle deposit transaction
+        if (transaction.getType() == TransactionType.DEPOSIT) {
+            agencyService.incrementBudget(transaction.getAmount());
+        }
+
+        // Handle withdrawal transaction
+        if (transaction.getType() == TransactionType.WITHDRAWAL) {
+            agencyService.decrementBudget(transaction.getAmount());
+        }
+
+        // Set transaction details
+        transaction.setAgency(agency);
         transaction.setCreateDate(LocalDateTime.now());
         transaction.setAgent(user);
-        transaction.setCreateDate(LocalDateTime.now());
         transaction.setUpdateDate(LocalDateTime.now());
-        return transactionMapper
-                .toTransactionDto(transactionRepository
-                        .save(transaction));
+
+        // Save the transaction and return DTO
+        return transactionMapper.toTransactionDto(transactionRepository.save(transaction));
     }
+
     public Page<TransactionDto> findAll(int page, int size) {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -122,7 +141,9 @@ public class TransactionService {
     }
 
     public List<TransactionDto> getTodayTransactions() {
-        List<Transaction> transactions = transactionRepository.findTransactionsForToday();
+        Long userId = getAuthenticatedUserId();
+        LocalDateTime startOfDay = LocalDateTime.now().with(LocalTime.of(2, 0));
+        List<Transaction> transactions = transactionRepository.findTransactionsForToday(startOfDay,userId);
         return transactionMapper.toTransactionDtos(transactions);
     }
 

@@ -2,6 +2,7 @@ package com.sidibrahim.Aman.dto;
 import lombok.*;
 
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 
@@ -25,4 +26,6 @@ public class AgencyDto {
     private LocalDate updateDate;
 
     private String email;
+
+    private BigDecimal budget;
 }

@@ -1,6 +1,7 @@
 package com.sidibrahim.Aman.controller;
 
 import com.sidibrahim.Aman.dto.AgencyDto;
+import com.sidibrahim.Aman.dto.EarningDTO;
 import com.sidibrahim.Aman.dto.PaginationData;
 import com.sidibrahim.Aman.dto.ResponseMessage;
 import com.sidibrahim.Aman.entity.Agency;
@@ -23,6 +24,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -133,5 +135,38 @@ public class AgencyController {
             log.info("Error occurred while trying to update agency email");
             throw new GenericException("Error Occurred While trying to update agency with "+e.getMessage());
         }
+    }
+
+    @PostMapping("/update-budget")
+    public ResponseEntity<ResponseMessage> updateBudget(@RequestParam(name = "budget", required = true) BigDecimal budget) {
+        //Ex Post : /api/agencies/update-budget?budget=120000
+        AgencyDto agencyDto = agencyService.updateBudget(budget);
+        return ResponseEntity.ok(ResponseMessage
+                .builder()
+                .message("Agency Budget updated successfully ")
+                .data(agencyDto)
+                .build());
+    }
+
+    @PostMapping("/reset-budget")
+    public ResponseEntity<ResponseMessage> resetBudget() {
+        //Ex :
+        BigDecimal zero = BigDecimal.valueOf(0);
+        AgencyDto agencyDto = agencyService.resetBudget();
+        return ResponseEntity.ok(ResponseMessage
+                .builder()
+                .message("Budget reinitialised successfully")
+                .data(agencyDto)
+                .build());
+    }
+
+    @GetMapping("/dashboard")
+    public ResponseEntity<ResponseMessage> getEarnings() {
+        EarningDTO earningDTO = agencyService.getEarnings();
+        return ResponseEntity.ok(ResponseMessage
+                .builder()
+                .message("Earnings for dashboard retrieved")
+                .data(earningDTO)
+                .build());
     }
 }
