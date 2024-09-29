@@ -6,6 +6,7 @@ import com.sidibrahim.Aman.dto.TransactionDto;
 import com.sidibrahim.Aman.entity.Agency;
 import com.sidibrahim.Aman.entity.Transaction;
 import com.sidibrahim.Aman.entity.User;
+import com.sidibrahim.Aman.enums.Role;
 import com.sidibrahim.Aman.enums.TransactionType;
 import com.sidibrahim.Aman.exception.GenericException;
 import com.sidibrahim.Aman.mapper.TransactionMapper;
@@ -80,7 +81,12 @@ public class TransactionService {
         // Set transaction details
         transaction.setAgency(agency);
         transaction.setCreateDate(LocalDateTime.now());
-        transaction.setAgent(user);
+        if (user.getRole()== Role.AGENT){
+            transaction.setAgent(user);
+        }
+        else {
+            transaction.setAgent(null);
+        }
         transaction.setUpdateDate(LocalDateTime.now());
 
         // Save the transaction and return DTO
