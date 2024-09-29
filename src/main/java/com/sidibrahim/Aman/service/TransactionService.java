@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -295,101 +296,85 @@ public class TransactionService {
 
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        // Format de la date et de l'heure sans millisecondes
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        String reportGenerationTime = LocalDateTime.now().format(dateTimeFormatter); // Heure de génération du rapport
+        String reportGenerationTime = LocalDateTime.now().format(dateTimeFormatter);
         DateTimeFormatter dateTimeFormatter2 = DateTimeFormatter.ofPattern("MM-dd HH:mm");
         String startDateFormatted = startDate.format(dateTimeFormatter2);
         String endDateFormatted = endDate.format(dateTimeFormatter2);
 
         try (PDDocument document = new PDDocument(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            PDPage page = new PDPage();
+            PDPage page = new PDPage(PDRectangle.A4);
             document.addPage(page);
 
             PDPageContentStream contentStream = new PDPageContentStream(document, page);
 
-            // S'assurer que la police est définie avant tout rendu de texte
+            // Add Title
             contentStream.setFont(PDType1Font.HELVETICA_BOLD, 12);
-
-            // Ajouter le titre
             contentStream.beginText();
-            contentStream.setFont(PDType1Font.HELVETICA_BOLD, 12); // Définir la police
-            contentStream.newLineAtOffset(100, 750); // Position ajustée du titre
+            contentStream.newLineAtOffset(100, 750);
             contentStream.showText("Rapport de Transactions pour l'Agent : " + user.getName());
             contentStream.endText();
 
-            // Ajouter la plage de dates
+            // Add Date Range
             contentStream.beginText();
-            contentStream.setFont(PDType1Font.HELVETICA_BOLD, 12); // Définir la police
             contentStream.newLineAtOffset(100, 730);
             contentStream.showText("Plage de Dates : " + startDateFormatted + " au " + endDateFormatted);
             contentStream.endText();
 
-            // Ajouter l'heure de génération du rapport
+            // Add Report Generation Time
             contentStream.beginText();
-            contentStream.setFont(PDType1Font.HELVETICA_BOLD, 12); // Définir la police
             contentStream.newLineAtOffset(100, 710);
             contentStream.showText("Rapport généré le : " + reportGenerationTime);
             contentStream.endText();
 
-            // Définir la position Y de départ pour le tableau et les largeurs de colonnes
+            // Add Summary Table
             int yPosition = 680;
-            int[] columnWidths = {70, 100, 120, 70, 50}; // Largeurs des colonnes pour Gain, Référence, Téléphone, Type, Montant
+            int[] summaryColumnWidths = {120, 100};
+            drawTableRow(contentStream, yPosition, summaryColumnWidths, new String[]{"Total transactions", String.valueOf(transactionCount)});
+            yPosition -= 20;
+            drawTableRow(contentStream, yPosition, summaryColumnWidths, new String[]{"Total des gains", totalEarnings.toPlainString()});
+            yPosition -= 20;
+            drawTableRow(contentStream, yPosition, summaryColumnWidths, new String[]{"Total des dépôts", exportDataDto.getTotalDeposits().toPlainString()});
+            yPosition -= 20;
+            drawTableRow(contentStream, yPosition, summaryColumnWidths, new String[]{"Total des retraits", exportDataDto.getTotalWithdrawals().toPlainString()});
+            yPosition -= 20;
+            drawTableRow(contentStream, yPosition, summaryColumnWidths, new String[]{"Trésorerie nette", exportDataDto.getNetCash().toPlainString()});
 
-            // Ajouter l'en-tête du tableau avec texte en gras
+            yPosition -= 40; // Space between the summary and transaction table
+
+            // Transaction Table Headers
+            int[] columnWidths = {70, 100, 120, 70, 50}; // Gain, Reference, Phone, Type, Amount
             contentStream.setFont(PDType1Font.HELVETICA_BOLD, 10);
-            drawTableRow(contentStream, yPosition, columnWidths, new String[]{"Gain", "Référence", "Téléphone", "Type", "Montant"}, true);
+            drawTableRow(contentStream, yPosition, columnWidths, new String[]{"Gain", "Référence", "Téléphone", "Type", "Montant"});
 
-            yPosition -= 20; // Ajuster la hauteur après l'en-tête
+            yPosition -= 20;
             contentStream.setFont(PDType1Font.HELVETICA, 10);
 
-            // Ajouter les lignes des transactions
+            // Add Transaction Rows
             for (ExportTransactionDto transaction : transactions) {
                 if (yPosition < 100) {
-                    contentStream.close(); // Fin de la page courante
-                    page = new PDPage();
+                    contentStream.close(); // Close current page content stream
+                    page = new PDPage(PDRectangle.A4);   // Create new page
                     document.addPage(page);
                     contentStream = new PDPageContentStream(document, page);
-                    yPosition = 700; // Réinitialiser la position pour la nouvelle page
-                    contentStream.setFont(PDType1Font.HELVETICA, 10); // Définir la police pour la nouvelle page
+                    yPosition = 700; // Reset Y position for new page
+                    contentStream.setFont(PDType1Font.HELVETICA, 10);
                 }
 
                 String[] row = new String[]{
-                        transaction.getEarn().toString(),   // Gain
+                        transaction.getEarn().toString(),
                         transaction.getReference().toString(),
                         transaction.getCustomerPhoneNumber(),
                         transaction.getType().toString(),
-                        transaction.getAmount().toPlainString() // Montant
+                        transaction.getAmount().toPlainString()
                 };
 
-                drawTableRow(contentStream, yPosition, columnWidths, row, false);
+                drawTableRow(contentStream, yPosition, columnWidths, row);
                 yPosition -= 20;
             }
 
-            // Ajouter la section récapitulative dans un tableau séparé
-            yPosition -= 40; // Espace entre le tableau et le récapitulatif
-            contentStream.setFont(PDType1Font.HELVETICA_BOLD, 12); // Définir la police
-            contentStream.beginText();
-            contentStream.newLineAtOffset(100, yPosition);
-            contentStream.showText("Résumé :");
-            contentStream.endText();
-
-            yPosition -= 20;
-
-            // Définir les largeurs des colonnes pour le récapitulatif et ajouter les lignes
-            int[] summaryColumnWidths = {120, 100};
-            drawTableRow(contentStream, yPosition, summaryColumnWidths, new String[]{"Total transactions : ", String.valueOf(transactionCount)}, false);
-            yPosition -= 20;
-            drawTableRow(contentStream, yPosition, summaryColumnWidths, new String[]{"Total des gains : ", totalEarnings.toPlainString()}, false);
-            yPosition -= 20;
-            drawTableRow(contentStream, yPosition, summaryColumnWidths, new String[]{"Total des dépôts : ", exportDataDto.getTotalDeposits().toPlainString()}, false);
-            yPosition -= 20;
-            drawTableRow(contentStream, yPosition, summaryColumnWidths, new String[]{"Total des retraits : ", exportDataDto.getTotalWithdrawals().toPlainString()}, false);
-            yPosition -= 20;
-            drawTableRow(contentStream, yPosition, summaryColumnWidths, new String[]{"Trésorerie nette : ", exportDataDto.getNetCash().toPlainString()}, false);
-
-            contentStream.close(); // Fermer le flux de contenu
-            document.save(out);
+            contentStream.close(); // Close content stream
+            document.save(out); // Save the document
             document.close();
 
             return out.toByteArray();
@@ -398,38 +383,47 @@ public class TransactionService {
         }
     }
 
-    // Méthode auxiliaire pour dessiner une ligne du tableau avec bordure et padding
-    private void drawTableRow(PDPageContentStream contentStream, int yPosition, int[] columnWidths, String[] content, boolean isHeader) throws IOException {
-        int padding = 5; // Padding entre les colonnes
+    // Method to draw a row without any background rectangles
+    private void drawTableRow(PDPageContentStream contentStream, int yPosition, int[] columnWidths, String[] content) throws IOException {
+        int padding = 5; // Padding between columns
         int xPosition = 100;
 
         for (int i = 0; i < content.length; i++) {
+            // Draw cell text
             contentStream.beginText();
-            contentStream.newLineAtOffset(xPosition + padding, yPosition); // Ajouter du padding
+            contentStream.newLineAtOffset(xPosition + padding, yPosition - 12); // Adjust Y position for proper alignment
             contentStream.showText(content[i]);
             contentStream.endText();
+
+            // Move to the next column position
             xPosition += columnWidths[i];
         }
 
-        // Dessiner la ligne horizontale sous la ligne si c'est un en-tête
-        if (isHeader) {
-            contentStream.setStrokingColor(Color.BLACK);
-            contentStream.moveTo(100, yPosition - 5);
-            contentStream.lineTo(100 + columnWidths[0] + columnWidths[1] + columnWidths[2] + columnWidths[3] + columnWidths[4], yPosition - 5);
-            contentStream.stroke();
-        }
-
-        // Dessiner les lignes verticales pour les colonnes
-        xPosition = 100;
-        for (int i = 0; i <= content.length; i++) {
-            contentStream.moveTo(xPosition, yPosition + 5);  // Ajuster pour créer un espacement vertical
-            contentStream.lineTo(xPosition, yPosition - 15);
-            contentStream.stroke();
-            xPosition += (i < content.length) ? columnWidths[i] : 0;
-        }
+        // Draw the table borders after filling the text
+        drawTableBorders(contentStream, yPosition, columnWidths, content.length);
     }
 
+    // Draw borders for the table rows and columns
+    private void drawTableBorders(PDPageContentStream contentStream, int yPosition, int[] columnWidths, int numColumns) throws IOException {
+        int xPosition = 100;
+        int rowHeight = 20; // Fixed row height
 
+        // Draw vertical lines for each column
+        for (int i = 0; i <= numColumns; i++) {
+            contentStream.setStrokingColor(Color.BLACK);
+            contentStream.moveTo(xPosition, yPosition + 5);
+            contentStream.lineTo(xPosition, yPosition - rowHeight + 5);
+            contentStream.stroke();
+            if (i < numColumns) {
+                xPosition += columnWidths[i];
+            }
+        }
+
+        // Draw horizontal line for the bottom of the row
+        contentStream.moveTo(100, yPosition - rowHeight + 5);
+        contentStream.lineTo(xPosition, yPosition - rowHeight + 5);
+        contentStream.stroke();
+    }
     @Transactional
     public TransactionDto updateTransaction(Long transactionId, TransactionDto transactionDto) {
         // Find the existing transaction by ID
