@@ -1,9 +1,6 @@
 package com.sidibrahim.Aman.controller;
 
-import com.sidibrahim.Aman.dto.AgencyDto;
-import com.sidibrahim.Aman.dto.EarningDTO;
-import com.sidibrahim.Aman.dto.PaginationData;
-import com.sidibrahim.Aman.dto.ResponseMessage;
+import com.sidibrahim.Aman.dto.*;
 import com.sidibrahim.Aman.entity.Agency;
 import com.sidibrahim.Aman.entity.User;
 import com.sidibrahim.Aman.exception.GenericException;
@@ -11,21 +8,17 @@ import com.sidibrahim.Aman.mapper.AgencyMapper;
 import com.sidibrahim.Aman.repository.AgencyRepository;
 import com.sidibrahim.Aman.repository.UserRepository;
 import com.sidibrahim.Aman.service.AgencyService;
-import jakarta.transaction.Transactional;
+import com.sidibrahim.Aman.service.BudgetLogService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.coyote.Response;
 import org.springframework.data.domain.Page;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -36,12 +29,14 @@ public class AgencyController {
     private final AgencyService agencyService;
     private final AgencyMapper agencyMapper;
     private final UserRepository userRepository;
+    private final BudgetLogService budgetLogService;
 
-    public AgencyController(AgencyRepository agencyRepository, AgencyService agencyService, AgencyMapper agencyMapper, UserRepository userRepository) {
+    public AgencyController(AgencyRepository agencyRepository, AgencyService agencyService, AgencyMapper agencyMapper, UserRepository userRepository, BudgetLogService budgetLogService) {
         this.agencyRepository = agencyRepository;
         this.agencyService = agencyService;
         this.agencyMapper = agencyMapper;
         this.userRepository = userRepository;
+        this.budgetLogService = budgetLogService;
     }
 
     @GetMapping
@@ -167,6 +162,19 @@ public class AgencyController {
                 .builder()
                 .message("Earnings for dashboard retrieved")
                 .data(earningDTO)
+                .build());
+    }
+
+    @GetMapping("/budgetLogs")
+    public ResponseEntity<ResponseMessage> getBudgetLogs(@RequestParam(name = "page", defaultValue = "0") int page, @RequestParam(name = "size", defaultValue = "10") int size) {
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Page<BudgetLogDto> budgetLogDtos = budgetLogService.getBudgetLogs(user.getAgency().getId(), page,size);
+        PaginationData paginationData = new PaginationData(budgetLogDtos);
+        return ResponseEntity.ok(ResponseMessage.builder()
+                .message("Retrieved BudgetLogs ")
+                .data(budgetLogDtos.getContent())
+                .meta(paginationData)
+                .status(500)
                 .build());
     }
 }

@@ -10,4 +10,6 @@ public class EarningDTO {
     private String withdrawals;
     private String deposits;
     private String earnings;
+    private String userName;
+    private String role;
 }

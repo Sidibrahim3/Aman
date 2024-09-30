@@ -4,6 +4,7 @@ import com.sidibrahim.Aman.dto.AgencyDto;
 import com.sidibrahim.Aman.dto.EarningDTO;
 import com.sidibrahim.Aman.dto.TransactionDto;
 import com.sidibrahim.Aman.entity.Agency;
+import com.sidibrahim.Aman.entity.BudgetLog;
 import com.sidibrahim.Aman.entity.Transaction;
 import com.sidibrahim.Aman.entity.User;
 import com.sidibrahim.Aman.enums.TransactionType;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -32,6 +34,7 @@ public class AgencyService {
     private final AgencyRepository agencyRepository;
     private final AgencyMapper agencyMapper;
     private final TransactionService transactionService;
+    private final BudgetLogService budgetLogService;
 
     @Transactional
     public AgencyDto save(AgencyDto agencyDto){
@@ -57,8 +60,17 @@ public class AgencyService {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         User user = (User) auth.getPrincipal();
         Agency agency = user.getAgency();
+        BigDecimal oldBudget = agency.getBudget();
         BigDecimal newBudget = agency.getBudget().add(budget);
         agency.setBudget(newBudget);
+        budgetLogService.saveBudgetLog(BudgetLog.builder()
+                .actionDateTime(LocalDateTime.now())
+                .oldValue(oldBudget)
+                .newValue(newBudget)
+                .userId(user.getId())
+                .userName(user.getName())
+                .agencyId(agency.getId())
+                .build());
         return agencyMapper.toAgencyDto(agencyRepository.save(agency));
     }
 
@@ -66,7 +78,17 @@ public class AgencyService {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         User user = (User) auth.getPrincipal();
         Agency agency = user.getAgency();
+        BigDecimal oldBudget = agency.getBudget();
         agency.setBudget(BigDecimal.valueOf(0));
+        BigDecimal newBudget = BigDecimal.valueOf(0);
+        budgetLogService.saveBudgetLog(BudgetLog.builder()
+                .actionDateTime(LocalDateTime.now())
+                .oldValue(oldBudget)
+                .newValue(newBudget)
+                .userId(user.getId())
+                .userName(user.getName())
+                .agencyId(agency.getId())
+                .build());
         return agencyMapper.toAgencyDto(agencyRepository.save(agency));
     }
 
@@ -76,13 +98,20 @@ public class AgencyService {
         User user = (User) auth.getPrincipal();
         Agency agency = agencyRepository.findById(user.getAgency().getId())
                 .orElseThrow(() -> new GenericException("Agency Not Found"));
+        BigDecimal oldBudget = agency.getBudget();
 
         // Increment the budget
         BigDecimal newBudget = agency.getBudget().add(budget);
         agency.setBudget(newBudget);
 
-        // Log the new budget
-        System.out.println("Incremented Budget: " + newBudget);
+        budgetLogService.saveBudgetLog(BudgetLog.builder()
+                .actionDateTime(LocalDateTime.now())
+                .oldValue(oldBudget)
+                .newValue(newBudget)
+                .userId(user.getId())
+                .userName(user.getName())
+                .agencyId(agency.getId())
+                .build());
         log.error("Incremented Budget: " + newBudget);
 
         agencyRepository.save(agency);
@@ -94,6 +123,7 @@ public class AgencyService {
         User user = (User) auth.getPrincipal();
         Agency agency = agencyRepository.findById(user.getAgency().getId())
                 .orElseThrow(() -> new GenericException("Agency Not Found"));
+        BigDecimal oldBudget = agency.getBudget();
 
         // Decrement the budget
         BigDecimal newBudget = agency.getBudget().subtract(budget);
@@ -104,8 +134,14 @@ public class AgencyService {
 
         agency.setBudget(newBudget);
 
-        // Log the new budget
-        System.out.println("Decremented Budget: " + newBudget);
+        budgetLogService.saveBudgetLog(BudgetLog.builder()
+                .actionDateTime(LocalDateTime.now())
+                .oldValue(oldBudget)
+                .newValue(newBudget)
+                .userId(user.getId())
+                .userName(user.getName())
+                        .agencyId(agency.getId())
+                .build());
         log.error("Decremented Budget: " + newBudget);
 
         agencyRepository.save(agency);
@@ -147,6 +183,8 @@ public class AgencyService {
                 .deposits(totalDeposits.toString()) // Convert BigDecimal to String
                 .earnings(totalEarnings.toString()) // Convert Double to String
                 .budget(budget)
+                .role(user.getRole().toString())
+                .userName(user.getName())
                 .build();
     }
 
