@@ -160,6 +160,13 @@ public class TransactionService {
         List<Transaction> transactions = transactionRepository.findTransactionsForToday(startOfDay,userId);
         return transactionMapper.toTransactionDtos(transactions);
     }
+    public List<TransactionDto> getTodayTransactionsForAgency(){
+        User user = (User) SecurityContextHolder.getContext().getAuthentication();
+        Long agencyId = user.getAgency().getId();
+        LocalDateTime startOfDay = LocalDateTime.now().with(LocalTime.of(2, 0));
+        List<Transaction> transactions = transactionRepository.findTransactionsForTodayByAgencyId(startOfDay,agencyId);
+        return transactionMapper.toTransactionDtos(transactions);
+    }
 
     public List<TransactionDto> getThisMonthTransactions() {
         List<Transaction> transactions = transactionRepository.findTransactionsForCurrentMonth();

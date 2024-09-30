@@ -7,6 +7,7 @@ import com.sidibrahim.Aman.entity.Agency;
 import com.sidibrahim.Aman.entity.BudgetLog;
 import com.sidibrahim.Aman.entity.Transaction;
 import com.sidibrahim.Aman.entity.User;
+import com.sidibrahim.Aman.enums.Role;
 import com.sidibrahim.Aman.enums.TransactionType;
 import com.sidibrahim.Aman.exception.GenericException;
 import com.sidibrahim.Aman.mapper.AgencyMapper;
@@ -177,15 +178,44 @@ public class AgencyService {
         // Get the agency's budget
         String budget = agency.getBudget().toString();
 
-        // Build and return the EarningDTO
-        return EarningDTO.builder()
-                .withdrawals(totalWithdrawals.toString()) // Convert BigDecimal to String
-                .deposits(totalDeposits.toString()) // Convert BigDecimal to String
-                .earnings(totalEarnings.toString()) // Convert Double to String
-                .budget(budget)
-                .role(user.getRole().toString())
-                .userName(user.getName())
-                .build();
+        if(user.getRole()== Role.AGENCY_OWNER){
+            BigDecimal totalAgencyWithdrawals = BigDecimal.ZERO;
+            BigDecimal totalAgencyDeposits = BigDecimal.ZERO;
+            Double totalAgencyEarnings = 0.0;
+
+            List<TransactionDto> transactionsTotalDto = transactionService.getTodayTransactionsForAgency();
+
+            // Iterate through transactions and calculate totals
+            for (TransactionDto transaction : transactionsTotalDto) {
+                if (transaction.getType() == TransactionType.WITHDRAWAL) {
+                    totalAgencyWithdrawals = totalAgencyWithdrawals.add(transaction.getAmount());
+                } else if (transaction.getType() == TransactionType.DEPOSIT) {
+                    totalAgencyDeposits = totalAgencyDeposits.add(transaction.getAmount());
+                }
+                totalAgencyEarnings += transaction.getEarn();
+            }
+
+            return EarningDTO.builder()
+                    .withdrawals(totalAgencyWithdrawals.toString()) // Convert BigDecimal to String
+                    .deposits(totalAgencyDeposits.toString()) // Convert BigDecimal to String
+                    .earnings(totalAgencyEarnings.toString()) // Convert Double to String
+                    .budget(budget)
+                    .role(user.getRole().toString())
+                    .userName(user.getName())
+                    .build();
+        }
+        else {
+            // Build and return the EarningDTO
+            return EarningDTO.builder()
+                    .withdrawals(totalWithdrawals.toString()) // Convert BigDecimal to String
+                    .deposits(totalDeposits.toString()) // Convert BigDecimal to String
+                    .earnings(totalEarnings.toString()) // Convert Double to String
+                    .budget(budget)
+                    .role(user.getRole().toString())
+                    .userName(user.getName())
+                    .build();
+        }
+
     }
 
 }
