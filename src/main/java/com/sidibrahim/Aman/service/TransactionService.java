@@ -125,8 +125,15 @@ public class TransactionService {
     @Transactional
     public void delete(Long id) {
         Transaction transaction = transactionRepository.findById(id).orElseThrow(() -> new GenericException("Transaction Not Found"));
-        transaction.setIsDeleted(true);
-        transactionRepository.save(transaction);
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (user.getRole()==Role.AGENCY_OWNER){
+            transactionRepository.delete(transaction);
+        }
+        else {
+            transaction.setIsDeleted(true);
+            transactionRepository.save(transaction);
+        }
+        agencyService.decrementBudget(transaction.getAmount());
     }
 
     public List<TransactionDto> findByAgentId(Long id) {
