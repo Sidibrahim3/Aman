@@ -52,8 +52,6 @@ public class UserService {
         String userPassword = userDto.getPassword();
         log.info("Adding new user");
         userDto.setPassword(passwordEncoder.encode(userPassword));
-        log.info("user password: {}", userPassword);
-        log.info("user password: {}", userDto.getPassword());
         User userEntity = userMapper.toUser(userDto);
         log.info("user entity: {}", userEntity);
         Agency agency = agencyRepository.findById(userDto.getAgencyId())

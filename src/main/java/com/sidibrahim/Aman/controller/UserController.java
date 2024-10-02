@@ -39,7 +39,8 @@ public class UserController {
     }
 
     @GetMapping()
-    @PreAuthorize("hasAuthority('SUPER_ADMIN')")
+  /*  @PreAuthorize("hasAuthority('SUPER_ADMIN')")*/
+    @PreAuthorize("hasAuthority({'SUPER_ADMIN','})")
     public ResponseEntity<ResponseMessage> getAllUsers(@RequestParam(defaultValue = "0") int page,
                                                        @RequestParam(defaultValue = "5") int size) {
         Page<UserDto> users = userService.getAllUsers(page, size);
