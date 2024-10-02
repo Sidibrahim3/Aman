@@ -208,9 +208,9 @@ public class AgencyService {
             // Build and return the EarningDTO
             return EarningDTO.builder()
                     //.withdrawals(totalWithdrawals.toString()) // Convert BigDecimal to String
-                    .withdrawals(totalEarnings.toString())
+                    .withdrawals(totalWithdrawals.toString())
                     .deposits(totalDeposits.toString()) // Convert BigDecimal to String
-                    .earnings(totalWithdrawals.toString()) // Convert Double to String
+                    .earnings(totalEarnings.toString()) // Convert Double to String
                     .budget(budget)
                     .role(user.getRole().toString())
                     .userName(user.getName())
